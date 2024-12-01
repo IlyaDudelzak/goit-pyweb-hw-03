@@ -1,5 +1,8 @@
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Manager, set_start_method
 from time import time
+
+set_start_method("spawn", force=True)
+
 def factorize(*nums):
     res = []
     for num in nums:
@@ -9,28 +12,33 @@ def factorize(*nums):
                 cur.append(i)
         res.append(cur)
     return res
-def factorize_one(num, res:Manager):
+def factorize_one(num, i, res):
     arr = []
-    for i in range(1, num+1):
-        if(num/i == num//i):
-            arr.append(i)
-    print(arr)
-    res.append(arr)
+    for j in range(1, num+1):   
+        if(num/j == num//j):
+            arr.append(j)
+    res[i] = arr
 
 def factorize_async(*nums):
     with Manager() as manager:
         processes = []
         res = manager.list()
-        for num in nums:
-            pr = Process(target=factorize_one, args=(num, res))
+        for i, num in enumerate(nums):
+            res.append(0)
+            pr = Process(target=factorize_one, args=(num, i, res))
             pr.start()
             processes.append(pr)
+
+        for pr in processes:
+            pr.join()
         print(res)
+
+        return list(res)
 if(__name__ == "__main__"):
     timer1 = time()
     a, b, c, d = factorize(128, 255, 99999, 10651060)
     timer1 = time() - timer1
-    print(timer1)
+
     timer2 = time()
     a1, b1, c1, d1 = factorize_async(128, 255, 99999, 10651060)
     timer2 = time() - timer2
